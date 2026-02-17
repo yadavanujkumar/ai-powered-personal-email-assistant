@@ -1,19 +1,310 @@
+/**
+ * AI Email Assistant - Frontend Application
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     const fetchEmailsButton = document.getElementById('fetch-emails');
     const emailList = document.getElementById('email-list');
+    const loadingIndicator = document.getElementById('loading');
+    const emailCount = document.getElementById('email-count');
 
+    let currentEmails = [];
+
+    /**
+     * Show/hide loading indicator
+     */
+    function setLoading(isLoading) {
+        loadingIndicator.classList.toggle('active', isLoading);
+        fetchEmailsButton.disabled = isLoading;
+    }
+
+    /**
+     * Display error message
+     */
+    function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        emailList.insertBefore(errorDiv, emailList.firstChild);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    /**
+     * Create priority badge
+     */
+    function createPriorityBadge(priority) {
+        const badge = document.createElement('span');
+        badge.className = `badge priority-${priority}`;
+        badge.textContent = priority;
+        return badge;
+    }
+
+    /**
+     * Create category badge
+     */
+    function createCategoryBadge(category) {
+        const badge = document.createElement('span');
+        badge.className = 'badge category';
+        badge.textContent = category;
+        return badge;
+    }
+
+    /**
+     * Create sentiment badge
+     */
+    function createSentimentBadge(sentiment) {
+        const badge = document.createElement('span');
+        const sentimentClass = sentiment === 'POSITIVE' ? 'sentiment-positive' : 'sentiment-negative';
+        badge.className = `badge ${sentimentClass}`;
+        badge.textContent = sentiment;
+        return badge;
+    }
+
+    /**
+     * Analyze an email
+     */
+    async function analyzeEmail(emailId, content) {
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to analyze email');
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error analyzing email:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Summarize an email
+     */
+    async function summarizeEmail(content) {
+        try {
+            const response = await fetch('/api/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to summarize email');
+            }
+
+            const data = await response.json();
+            return data.summary;
+        } catch (error) {
+            console.error('Error summarizing email:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate reply for an email
+     */
+    async function generateReply(content) {
+        try {
+            const response = await fetch('/api/reply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate reply');
+            }
+
+            const data = await response.json();
+            return data.reply;
+        } catch (error) {
+            console.error('Error generating reply:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Display analysis results in email card
+     */
+    function displayAnalysisResult(card, analysis, type) {
+        // Remove existing result if any
+        const existing = card.querySelector('.analysis-result');
+        if (existing) {
+            existing.remove();
+        }
+
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'analysis-result';
+
+        let content = '';
+        if (type === 'analyze') {
+            content = `
+                <h4>📊 Analysis Results</h4>
+                <p><strong>Priority:</strong> ${analysis.priority.priority.toUpperCase()} (Score: ${analysis.priority.score})</p>
+                <p><strong>Category:</strong> ${analysis.category.category}</p>
+                <p><strong>Sentiment:</strong> ${analysis.sentiment.sentiment} (Confidence: ${analysis.sentiment.confidence})</p>
+                ${analysis.priority.keywords.length > 0 ? `<p><strong>Keywords:</strong> ${analysis.priority.keywords.join(', ')}</p>` : ''}
+            `;
+        } else if (type === 'summarize') {
+            content = `
+                <h4>📝 Summary</h4>
+                <p>${analysis}</p>
+            `;
+        } else if (type === 'reply') {
+            content = `
+                <h4>💬 Suggested Reply</h4>
+                <p>${analysis}</p>
+            `;
+        }
+
+        resultDiv.innerHTML = content;
+        card.appendChild(resultDiv);
+    }
+
+    /**
+     * Create email card with enhanced features
+     */
+    function createEmailCard(email) {
+        const li = document.createElement('li');
+        li.className = 'email-card';
+
+        // Email header with badges
+        const header = document.createElement('div');
+        header.className = 'email-header';
+
+        const badges = document.createElement('div');
+        badges.className = 'email-badges';
+        
+        // Will be populated after analysis
+        header.appendChild(badges);
+
+        // Email snippet
+        const snippet = document.createElement('div');
+        snippet.className = 'email-snippet';
+        snippet.textContent = email.snippet || 'No preview available';
+
+        // Actions
+        const actions = document.createElement('div');
+        actions.className = 'email-actions';
+
+        const analyzeBtn = document.createElement('button');
+        analyzeBtn.textContent = '🔍 Analyze';
+        analyzeBtn.className = 'btn-small';
+        analyzeBtn.onclick = async () => {
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Analyzing...';
+            try {
+                const analysis = await analyzeEmail(email.id, email.snippet);
+                
+                // Update badges
+                badges.innerHTML = '';
+                badges.appendChild(createPriorityBadge(analysis.priority.priority));
+                badges.appendChild(createCategoryBadge(analysis.category.category));
+                if (analysis.sentiment.sentiment !== 'UNKNOWN') {
+                    badges.appendChild(createSentimentBadge(analysis.sentiment.sentiment));
+                }
+                
+                // Display results
+                displayAnalysisResult(li, analysis, 'analyze');
+            } catch (error) {
+                showError('Failed to analyze email');
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🔍 Analyze';
+            }
+        };
+
+        const summarizeBtn = document.createElement('button');
+        summarizeBtn.textContent = '📝 Summarize';
+        summarizeBtn.className = 'btn-small btn-info';
+        summarizeBtn.onclick = async () => {
+            summarizeBtn.disabled = true;
+            summarizeBtn.textContent = 'Summarizing...';
+            try {
+                const summary = await summarizeEmail(email.snippet);
+                displayAnalysisResult(li, summary, 'summarize');
+            } catch (error) {
+                showError('Failed to summarize email');
+            } finally {
+                summarizeBtn.disabled = false;
+                summarizeBtn.textContent = '📝 Summarize';
+            }
+        };
+
+        const replyBtn = document.createElement('button');
+        replyBtn.textContent = '💬 Reply';
+        replyBtn.className = 'btn-small btn-success';
+        replyBtn.onclick = async () => {
+            replyBtn.disabled = true;
+            replyBtn.textContent = 'Generating...';
+            try {
+                const reply = await generateReply(email.snippet);
+                displayAnalysisResult(li, reply, 'reply');
+            } catch (error) {
+                showError('Failed to generate reply');
+            } finally {
+                replyBtn.disabled = false;
+                replyBtn.textContent = '💬 Reply';
+            }
+        };
+
+        actions.appendChild(analyzeBtn);
+        actions.appendChild(summarizeBtn);
+        actions.appendChild(replyBtn);
+
+        // Assemble card
+        li.appendChild(header);
+        li.appendChild(snippet);
+        li.appendChild(actions);
+
+        return li;
+    }
+
+    /**
+     * Fetch and display emails
+     */
     fetchEmailsButton.addEventListener('click', async () => {
+        setLoading(true);
+        emailList.innerHTML = '';
+
         try {
             const response = await fetch('/api/emails');
-            const emails = await response.json();
-            emailList.innerHTML = '';
+            if (!response.ok) {
+                throw new Error('Failed to fetch emails');
+            }
+
+            const data = await response.json();
+            const emails = data.emails || [];
+            
+            currentEmails = emails;
+            emailCount.textContent = `${emails.length} email${emails.length !== 1 ? 's' : ''} loaded`;
+
+            if (emails.length === 0) {
+                emailList.innerHTML = '<li class="email-card">No emails found</li>';
+                return;
+            }
+
             emails.forEach(email => {
-                const li = document.createElement('li');
-                li.textContent = email.snippet;
-                emailList.appendChild(li);
+                const card = createEmailCard(email);
+                emailList.appendChild(card);
             });
         } catch (error) {
             console.error('Error fetching emails:', error);
+            showError('Failed to fetch emails. Please try again.');
+        } finally {
+            setLoading(false);
         }
     });
 });
