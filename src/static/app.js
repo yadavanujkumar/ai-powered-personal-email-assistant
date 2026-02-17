@@ -148,28 +148,53 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultDiv = document.createElement('div');
         resultDiv.className = 'analysis-result';
 
-        let content = '';
+        const title = document.createElement('h4');
+        const content = document.createElement('div');
+
         if (type === 'analyze') {
-            content = `
-                <h4>📊 Analysis Results</h4>
-                <p><strong>Priority:</strong> ${analysis.priority.priority.toUpperCase()} (Score: ${analysis.priority.score})</p>
-                <p><strong>Category:</strong> ${analysis.category.category}</p>
-                <p><strong>Sentiment:</strong> ${analysis.sentiment.sentiment} (Confidence: ${analysis.sentiment.confidence})</p>
-                ${analysis.priority.keywords.length > 0 ? `<p><strong>Keywords:</strong> ${analysis.priority.keywords.join(', ')}</p>` : ''}
-            `;
+            title.textContent = '📊 Analysis Results';
+            
+            // Create structured content
+            const priorityP = document.createElement('p');
+            priorityP.innerHTML = '<strong>Priority:</strong> ';
+            const priorityText = document.createTextNode(`${analysis.priority.priority.toUpperCase()} (Score: ${analysis.priority.score})`);
+            priorityP.appendChild(priorityText);
+            
+            const categoryP = document.createElement('p');
+            categoryP.innerHTML = '<strong>Category:</strong> ';
+            const categoryText = document.createTextNode(analysis.category.category);
+            categoryP.appendChild(categoryText);
+            
+            const sentimentP = document.createElement('p');
+            sentimentP.innerHTML = '<strong>Sentiment:</strong> ';
+            const sentimentText = document.createTextNode(`${analysis.sentiment.sentiment} (Confidence: ${analysis.sentiment.confidence})`);
+            sentimentP.appendChild(sentimentText);
+            
+            content.appendChild(priorityP);
+            content.appendChild(categoryP);
+            content.appendChild(sentimentP);
+            
+            if (analysis.priority.keywords.length > 0) {
+                const keywordsP = document.createElement('p');
+                keywordsP.innerHTML = '<strong>Keywords:</strong> ';
+                const keywordsText = document.createTextNode(analysis.priority.keywords.join(', '));
+                keywordsP.appendChild(keywordsText);
+                content.appendChild(keywordsP);
+            }
         } else if (type === 'summarize') {
-            content = `
-                <h4>📝 Summary</h4>
-                <p>${analysis}</p>
-            `;
+            title.textContent = '📝 Summary';
+            const summaryP = document.createElement('p');
+            summaryP.textContent = analysis;
+            content.appendChild(summaryP);
         } else if (type === 'reply') {
-            content = `
-                <h4>💬 Suggested Reply</h4>
-                <p>${analysis}</p>
-            `;
+            title.textContent = '💬 Suggested Reply';
+            const replyP = document.createElement('p');
+            replyP.textContent = analysis;
+            content.appendChild(replyP);
         }
 
-        resultDiv.innerHTML = content;
+        resultDiv.appendChild(title);
+        resultDiv.appendChild(content);
         card.appendChild(resultDiv);
     }
 

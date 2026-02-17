@@ -159,9 +159,9 @@ def analyze_email():
         
         subject = data.get('subject', '')
         
-        # Perform all analyses
+        # Perform analyses efficiently (sentiment is computed once and reused)
         sentiment = ai_assistant.analyze_sentiment(email_content)
-        priority = ai_assistant.prioritize_email(email_content, subject)
+        priority = ai_assistant.prioritize_email(email_content, subject, sentiment=sentiment)
         category = ai_assistant.categorize_email(email_content, subject)
         
         return jsonify({

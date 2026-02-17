@@ -109,13 +109,14 @@ class AIAssistant:
                 'error': str(e)
             }
     
-    def prioritize_email(self, content: str, subject: str = '') -> Dict[str, Any]:
+    def prioritize_email(self, content: str, subject: str = '', sentiment: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Determine the priority level of an email.
         
         Args:
             content: Email content
             subject: Email subject (optional)
+            sentiment: Pre-computed sentiment analysis (optional, to avoid duplication)
             
         Returns:
             Dictionary with priority level and reasoning
@@ -136,7 +137,10 @@ class AIAssistant:
                     matched_keywords.append(keyword)
             
             # Analyze sentiment - negative emails might need quick attention
-            sentiment = self.analyze_sentiment(content)
+            # Use provided sentiment if available to avoid duplication
+            if sentiment is None:
+                sentiment = self.analyze_sentiment(content)
+            
             if sentiment.get('sentiment') == 'NEGATIVE' and sentiment.get('confidence', 0) > 0.7:
                 priority_score += 1
                 matched_keywords.append('negative sentiment')
