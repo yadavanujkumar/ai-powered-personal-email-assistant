@@ -4,12 +4,268 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Email Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            color: #667eea;
+            font-weight: 500;
+            padding: 10px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .email-count {
+            margin-left: auto;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        #email-list {
+            list-style: none;
+            display: grid;
+            gap: 15px;
+        }
+        
+        .email-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .email-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .email-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-high {
+            background: #fee;
+            color: #c33;
+        }
+        
+        .priority-medium {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+        
+        .priority-low {
+            background: #dfe6e9;
+            color: #2d3436;
+        }
+        
+        .category {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .sentiment-positive {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .sentiment-negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .email-snippet {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .email-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+        }
+        
+        .btn-info:hover {
+            background: #138496;
+        }
+        
+        .analysis-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .analysis-result h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .analysis-result p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #721c24;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .email-count {
+                margin-left: 0;
+            }
+        }
+    </style>
     <script src="/static/app.js" defer></script>
 </head>
 <body>
-    <h1>AI-Powered Email Assistant</h1>
-    <div id="app">
-        <button id="fetch-emails">Fetch Emails</button>
+    <div class="container">
+        <header>
+            <h1>🤖 AI-Powered Email Assistant</h1>
+            <p class="subtitle">Intelligent email management with AI-powered insights</p>
+        </header>
+        
+        <div class="controls">
+            <button id="fetch-emails">📧 Fetch Emails</button>
+            <div class="loading" id="loading">Loading...</div>
+            <span class="email-count" id="email-count">No emails loaded</span>
+        </div>
+        
         <ul id="email-list"></ul>
     </div>
 </body>
