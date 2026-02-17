@@ -32,9 +32,19 @@ This project is an advanced AI-powered personal email assistant that helps users
   - Summarization: facebook/bart-large-cnn
   - Text Generation: GPT-2
   - Sentiment Analysis: DistilBERT
+  - PyTorch: 2.6.0+ (patched for security vulnerabilities)
 - **Frontend**: Modern JavaScript (Vanilla JS) with CSS3
 - **Containerization**: Docker
 - **Testing**: pytest
+
+## Security
+
+This project follows security best practices:
+- ✅ **XSS Protection**: Secure DOM manipulation without innerHTML vulnerabilities
+- ✅ **Updated Dependencies**: All dependencies updated to patched versions
+  - PyTorch upgraded to 2.6.0+ to address heap buffer overflow, use-after-free, and RCE vulnerabilities
+- ✅ **Input Validation**: Comprehensive validation for all user inputs
+- ✅ **CodeQL Verified**: No security alerts in static analysis
 
 ## Setup Instructions
 
